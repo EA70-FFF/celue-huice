@@ -4,14 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>策略回测 - 中文量化交易工具</title>
+    <title>策略回测 | 量化交易研究平台</title>
 
-    <meta
-        name="description"
-        content="策略回测是一款中文量化交易策略回测工具，支持K线图表、策略测试、买卖信号和收益分析。"
-    >
+    <meta name="description" content="中文量化交易策略回测平台，支持K线图表、策略回测、交易记录和收益分析。">
 
-    <link rel="stylesheet" href="./样式/整体样式.css">
+    <link rel="stylesheet" href="./css/style.css">
 
     <script src="https://unpkg.com/lightweight-charts@5.0.0/dist/lightweight-charts.standalone.production.js"></script>
 </head>
@@ -23,7 +20,7 @@
         <div class="brand-icon">策</div>
         <div>
             <div>策略回测</div>
-            <div class="brand-subtitle">中文量化交易策略研究平台</div>
+            <div class="brand-subtitle">量化交易研究平台</div>
         </div>
     </div>
 
@@ -38,18 +35,18 @@
         <div>
             <h1>策略回测工作台</h1>
             <div class="page-description">
-                配置交易参数，观察市场走势，分析策略表现。
+                配置回测参数，观察K线走势，分析交易策略表现。
             </div>
         </div>
 
-        <div class="demo-label">演示版本 · 示例数据</div>
+        <div class="demo-label">示例数据 · 研究模式</div>
     </section>
 
     <!-- 回测参数 -->
+
     <section class="panel">
         <div class="panel-header">
             <div class="panel-title">回测参数</div>
-
             <button class="secondary-button" id="resetButton" type="button">
                 恢复默认
             </button>
@@ -90,7 +87,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="fee">手续费（单边 %）</label>
+                    <label for="fee">单边手续费（%）</label>
                     <input
                         class="form-control"
                         id="fee"
@@ -122,6 +119,7 @@
     </section>
 
     <!-- K线图 -->
+
     <section class="panel">
         <div class="panel-header">
             <div class="chart-heading">
@@ -129,31 +127,24 @@
                 <span class="symbol-price" id="currentPrice">--</span>
                 <span class="price-change" id="priceChange">--</span>
             </div>
-
             <span style="color:var(--muted);font-size:12px;">
-                示例K线
+                K线走势
             </span>
         </div>
 
         <div id="chart"></div>
 
         <div class="chart-footer">
-            图表使用 Lightweight Charts 绘制。当前显示的是本地生成的示例行情，
-            并非真实交易所历史数据。
+            当前版本使用本地生成的示例行情，不是真实交易所行情。
         </div>
     </section>
 
     <!-- 回测指标 -->
+
     <section class="panel">
         <div class="panel-header">
             <div class="panel-title">回测结果</div>
-
-            <span
-                style="color:var(--muted);font-size:12px;"
-                id="resultStatus"
-            >
-                等待运行
-            </span>
+            <span id="resultStatus">等待运行</span>
         </div>
 
         <div class="panel-body">
@@ -162,29 +153,29 @@
                 <div class="metric-card">
                     <div class="metric-label">总收益率</div>
                     <div class="metric-value" id="totalReturn">--</div>
-                    <div class="metric-note">相对于初始资金</div>
+                    <div class="metric-note">相对初始资金的收益</div>
                 </div>
 
                 <div class="metric-card">
                     <div class="metric-label">最终资金</div>
                     <div class="metric-value" id="finalCapital">--</div>
-                    <div class="metric-note">扣除模拟交易手续费后</div>
+                    <div class="metric-note">模拟回测结束后的资金</div>
                 </div>
 
                 <div class="metric-card">
                     <div class="metric-label">最大回撤</div>
                     <div class="metric-value" id="maxDrawdown">--</div>
-                    <div class="metric-note">模拟资金曲线峰值回撤</div>
+                    <div class="metric-note">资金曲线最大回撤</div>
                 </div>
 
                 <div class="metric-card">
                     <div class="metric-label">交易次数</div>
                     <div class="metric-value" id="tradeCount">--</div>
-                    <div class="metric-note">已完成的模拟交易</div>
+                    <div class="metric-note">已完成交易数量</div>
                 </div>
 
                 <div class="metric-card">
-                    <div class="metric-label">盈利交易比例</div>
+                    <div class="metric-label">胜率</div>
                     <div class="metric-value" id="winRate">--</div>
                     <div class="metric-note">盈利交易占比</div>
                 </div>
@@ -192,19 +183,19 @@
                 <div class="metric-card">
                     <div class="metric-label">盈利交易</div>
                     <div class="metric-value positive" id="winCount">--</div>
-                    <div class="metric-note">单笔收益大于零</div>
+                    <div class="metric-note">盈利笔数</div>
                 </div>
 
                 <div class="metric-card">
                     <div class="metric-label">亏损交易</div>
                     <div class="metric-value negative" id="lossCount">--</div>
-                    <div class="metric-note">单笔收益小于零</div>
+                    <div class="metric-note">亏损笔数</div>
                 </div>
 
                 <div class="metric-card">
                     <div class="metric-label">手续费总额</div>
                     <div class="metric-value" id="totalFees">--</div>
-                    <div class="metric-note">模拟买卖手续费</div>
+                    <div class="metric-note">模拟买卖手续费合计</div>
                 </div>
 
             </div>
@@ -212,16 +203,11 @@
     </section>
 
     <!-- 交易记录 -->
+
     <section class="panel">
         <div class="panel-header">
             <div class="panel-title">交易记录</div>
-
-            <span
-                style="color:var(--muted);font-size:12px;"
-                id="tradeSummary"
-            >
-                暂无记录
-            </span>
+            <span id="tradeSummary">暂无记录</span>
         </div>
 
         <div class="table-wrapper">
@@ -235,13 +221,15 @@
                         <th>买入价格</th>
                         <th>卖出价格</th>
                         <th>收益金额</th>
+                        <th>收益率</th>
+                        <th>交易结果</th>
                     </tr>
                 </thead>
 
                 <tbody id="tradeTableBody">
                     <tr>
-                        <td colspan="7" class="empty-state">
-                            点击“运行回测”生成示例交易记录
+                        <td colspan="9" class="empty-state">
+                            点击“运行回测”查看模拟交易记录
                         </td>
                     </tr>
                 </tbody>
@@ -249,29 +237,24 @@
         </div>
     </section>
 
-    <!-- 使用说明 -->
+    <!-- 说明 -->
+
     <section class="notice">
-        <strong>使用说明：</strong><br>
-        1. 当前版本使用自动生成的示例 K 线，不代表真实市场走势。<br>
-        2. 回测结果用于演示策略计算流程，不构成投资建议。<br>
-        3. 手续费按买入和卖出分别计算。<br>
-        4. 当前尚未模拟滑点、资金费率等成本。<br>
-        5. 真正用于研究或交易前，需要接入真实历史数据，并进一步验证回测规则。
+        <strong>使用说明</strong><br>
+        1. 当前行情为程序生成的示例数据，不代表真实市场价格。<br>
+        2. 回测结果仅供策略研究和软件测试使用。<br>
+        3. 实际交易还涉及滑点、资金费率、流动性等因素。<br>
+        4. 历史回测结果不能保证未来收益。
     </section>
 
     <footer class="footer">
-        策略回测 · 中文量化策略研究工具<br>
+        策略回测 · 中文量化交易研究平台<br>
         仅供研究与学习使用，不构成投资建议。
     </footer>
 
 </main>
 
-<!--
-    模块加载顺序很重要：
-    先加载行情、指标和策略，
-    再加载回测引擎和图表，
-    最后加载应用控制器。
--->
+<!-- 按依赖顺序加载 JavaScript 模块 -->
 
 <script src="./js/market-data.js"></script>
 <script src="./js/indicators.js"></script>
