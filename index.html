@@ -11,10 +11,8 @@
         content="策略回测是一款中文量化交易策略回测工具，支持K线图表、策略测试、买卖信号和收益分析。"
     >
 
-    <!-- 网页样式文件 -->
     <link rel="stylesheet" href="./样式/整体样式.css">
 
-    <!-- TradingView Lightweight Charts -->
     <script src="https://unpkg.com/lightweight-charts@5.0.0/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 
@@ -51,6 +49,7 @@
     <section class="panel">
         <div class="panel-header">
             <div class="panel-title">回测参数</div>
+
             <button class="secondary-button" id="resetButton" type="button">
                 恢复默认
             </button>
@@ -148,7 +147,11 @@
     <section class="panel">
         <div class="panel-header">
             <div class="panel-title">回测结果</div>
-            <span style="color:var(--muted);font-size:12px;" id="resultStatus">
+
+            <span
+                style="color:var(--muted);font-size:12px;"
+                id="resultStatus"
+            >
                 等待运行
             </span>
         </div>
@@ -212,7 +215,11 @@
     <section class="panel">
         <div class="panel-header">
             <div class="panel-title">交易记录</div>
-            <span style="color:var(--muted);font-size:12px;" id="tradeSummary">
+
+            <span
+                style="color:var(--muted);font-size:12px;"
+                id="tradeSummary"
+            >
                 暂无记录
             </span>
         </div>
@@ -222,19 +229,18 @@
                 <thead>
                     <tr>
                         <th>序号</th>
+                        <th>交易方向</th>
                         <th>买入时间</th>
                         <th>卖出时间</th>
                         <th>买入价格</th>
                         <th>卖出价格</th>
                         <th>收益金额</th>
-                        <th>收益率</th>
-                        <th>结果</th>
                     </tr>
                 </thead>
 
                 <tbody id="tradeTableBody">
                     <tr>
-                        <td colspan="8" class="empty-state">
+                        <td colspan="7" class="empty-state">
                             点击“运行回测”生成示例交易记录
                         </td>
                     </tr>
@@ -248,8 +254,9 @@
         <strong>使用说明：</strong><br>
         1. 当前版本使用自动生成的示例 K 线，不代表真实市场走势。<br>
         2. 回测结果用于演示策略计算流程，不构成投资建议。<br>
-        3. 当前手续费按买入和卖出分别计算，尚未模拟滑点、资金费率等成本。<br>
-        4. 真正用于研究或交易前，需要接入真实历史数据，并进一步验证回测规则。
+        3. 手续费按买入和卖出分别计算。<br>
+        4. 当前尚未模拟滑点、资金费率等成本。<br>
+        5. 真正用于研究或交易前，需要接入真实历史数据，并进一步验证回测规则。
     </section>
 
     <footer class="footer">
@@ -259,694 +266,19 @@
 
 </main>
 
-<script>
-(function () {
-    "use strict";
-
-    const $ = (id) => document.getElementById(id);
-
-    let chart = null;
-    let candleSeries = null;
-    let currentCandles = [];
-    let currentMarkers = [];
-
-    const symbolConfig = {
-        BTCUSDT: {
-            base: 68000,
-            volatility: 0.025,
-            precision: 2
-        },
-        ETHUSDT: {
-            base: 3500,
-            volatility: 0.032,
-            precision: 2
-        },
-        BNBUSDT: {
-            base: 600,
-            volatility: 0.028,
-            precision: 2
-        }
-    };
-
-    function formatMoney(value) {
-        return Number(value).toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
-    }
-
-    function formatPercent(value) {
-        return (value >= 0 ? "+" : "") + value.toFixed(2) + "%";
-    }
-
-    function seededRandom(seed) {
-        let state = seed >>> 0;
-
-        return function () {
-            state = (state * 1664525 + 1013904223) >>> 0;
-            return state / 4294967296;
-        };
-    }
-
-    function hashString(text) {
-        let hash = 0;
-
-        for (let i = 0; i < text.length; i++) {
-            hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
-        }
-
-        return Math.abs(hash);
-    }
-
-    function timeframeSeconds(timeframe) {
-        const map = {
-            "1D": 86400,
-            "4H": 14400,
-            "1H": 3600,
-            "15m": 900
-        };
-
-        return map[timeframe] || 86400;
-    }
-
-    function generateCandles(symbol, timeframe) {
-        const config = symbolConfig[symbol];
-        const random = seededRandom(
-            hashString(symbol + timeframe + "strategy-demo")
-        );
-
-        const step = timeframeSeconds(timeframe);
-        const count = 180;
-
-        const now = Math.floor(Date.now() / 1000);
-        const alignedNow = Math.floor(now / step) * step;
-        const start = alignedNow - (count - 1) * step;
-
-        let price = config.base;
-        const candles = [];
-
-        for (let i = 0; i < count; i++) {
-            const open = price;
-
-            const trend =
-                Math.sin(i / 13) * config.volatility * 0.25;
-
-            const movement =
-                (random() - 0.48) * config.volatility * 2 + trend;
-
-            let close = open * (1 + movement);
-
-            const upper = random() * config.volatility * 0.8;
-            const lower = random() * config.volatility * 0.8;
-
-            const high = Math.max(open, close) * (1 + upper);
-            const low = Math.min(open, close) * (1 - lower);
-
-            price = close;
-
-            candles.push({
-                time: start + i * step,
-                open: Number(open.toFixed(config.precision)),
-                high: Number(high.toFixed(config.precision)),
-                low: Number(low.toFixed(config.precision)),
-                close: Number(close.toFixed(config.precision))
-            });
-        }
-
-        return candles;
-    }
-
-    function initChart() {
-        const container = $("chart");
-
-        if (!window.LightweightCharts) {
-            container.innerHTML =
-                '<div class="empty-state">图表加载失败，请检查网络连接后刷新页面。</div>';
-            return;
-        }
-
-        chart = LightweightCharts.createChart(container, {
-            width: container.clientWidth,
-            height: container.clientHeight,
-
-            layout: {
-                background: {
-                    type: "solid",
-                    color: "#151a21"
-                },
-                textColor: "#848e9c",
-                fontSize: 12
-            },
-
-            grid: {
-                vertLines: {
-                    color: "#20262e"
-                },
-                horzLines: {
-                    color: "#20262e"
-                }
-            },
-
-            rightPriceScale: {
-                borderColor: "#2b3139"
-            },
-
-            timeScale: {
-                borderColor: "#2b3139",
-                timeVisible: true,
-                secondsVisible: false
-            },
-
-            crosshair: {
-                vertLine: {
-                    color: "#596579",
-                    width: 1,
-                    style: LightweightCharts.LineStyle.Dashed
-                },
-                horzLine: {
-                    color: "#596579",
-                    width: 1,
-                    style: LightweightCharts.LineStyle.Dashed
-                }
-            },
-
-            localization: {
-                locale: "zh-CN"
-            },
-
-            handleScroll: true,
-            handleScale: true
-        });
-
-        candleSeries = chart.addSeries(
-            LightweightCharts.CandlestickSeries,
-            {
-                upColor: "#0ecb81",
-                downColor: "#f6465d",
-                borderUpColor: "#0ecb81",
-                borderDownColor: "#f6465d",
-                wickUpColor: "#0ecb81",
-                wickDownColor: "#f6465d"
-            }
-        );
-
-        renderCandles();
-
-        if (window.ResizeObserver) {
-            const resizeObserver = new ResizeObserver(function () {
-                if (chart && container.clientWidth > 0) {
-                    chart.applyOptions({
-                        width: container.clientWidth,
-                        height: container.clientHeight
-                    });
-                }
-            });
-
-            resizeObserver.observe(container);
-        } else {
-            window.addEventListener("resize", function () {
-                if (chart) {
-                    chart.applyOptions({
-                        width: container.clientWidth,
-                        height: container.clientHeight
-                    });
-                }
-            });
-        }
-    }
-
-    function renderCandles() {
-        if (!candleSeries || !chart) {
-            return;
-        }
-
-        const symbol = $("symbol").value;
-        const timeframe = $("timeframe").value;
-
-        currentCandles = generateCandles(symbol, timeframe);
-
-        candleSeries.setData(currentCandles);
-
-        chart.timeScale().fitContent();
-
-        updatePriceHeader();
-    }
-
-    function updatePriceHeader() {
-        if (!currentCandles.length) {
-            return;
-        }
-
-        const first = currentCandles[0].close;
-        const last = currentCandles[currentCandles.length - 1].close;
-        const change = ((last - first) / first) * 100;
-
-        $("chartSymbol").textContent = $("symbol").value;
-        $("currentPrice").textContent = formatMoney(last);
-
-        const changeElement = $("priceChange");
-
-        changeElement.textContent = formatPercent(change);
-        changeElement.className =
-            "price-change " + (change >= 0 ? "positive" : "negative");
-    }
-
-    function movingAverage(values, period) {
-        const result = new Array(values.length).fill(null);
-
-        for (let i = period - 1; i < values.length; i++) {
-            let total = 0;
-
-            for (let j = i - period + 1; j <= i; j++) {
-                total += values[j];
-            }
-
-            result[i] = total / period;
-        }
-
-        return result;
-    }
-
-    function getSignals(candles) {
-        const closes = candles.map((candle) => candle.close);
-        const strategy = $("strategy").value;
-
-        const signals = [];
-
-        if (strategy === "ma") {
-            const shortMA = movingAverage(closes, 7);
-            const longMA = movingAverage(closes, 21);
-
-            for (let i = 1; i < candles.length; i++) {
-                if (
-                    shortMA[i - 1] !== null &&
-                    longMA[i - 1] !== null &&
-                    shortMA[i] !== null &&
-                    longMA[i] !== null
-                ) {
-                    if (
-                        shortMA[i - 1] <= longMA[i - 1] &&
-                        shortMA[i] > longMA[i]
-                    ) {
-                        signals.push({
-                            index: i,
-                            type: "buy"
-                        });
-                    } else if (
-                        shortMA[i - 1] >= longMA[i - 1] &&
-                        shortMA[i] < longMA[i]
-                    ) {
-                        signals.push({
-                            index: i,
-                            type: "sell"
-                        });
-                    }
-                }
-            }
-        } else {
-            const lookback = 5;
-
-            for (let i = lookback; i < candles.length; i++) {
-                const previous = closes[i - lookback];
-                const current = closes[i];
-
-                const momentum = (current - previous) / previous;
-
-                if (momentum > 0.025) {
-                    signals.push({
-                        index: i,
-                        type: "buy"
-                    });
-                } else if (momentum < -0.025) {
-                    signals.push({
-                        index: i,
-                        type: "sell"
-                    });
-                }
-            }
-        }
-
-        return signals;
-    }
-
-    function runBacktest() {
-        if (!currentCandles.length) {
-            alert("当前没有可用的示例K线数据。");
-            return;
-        }
-
-        const initialCapital = Number($("initialCapital").value);
-        const feePercent = Number($("fee").value);
-
-        if (!Number.isFinite(initialCapital) || initialCapital <= 0) {
-            alert("请输入大于零的初始资金。");
-            return;
-        }
-
-        if (
-            !Number.isFinite(feePercent) ||
-            feePercent < 0 ||
-            feePercent > 10
-        ) {
-            alert("手续费必须在 0% 到 10% 之间。");
-            return;
-        }
-
-        const feeRate = feePercent / 100;
-        const signals = getSignals(currentCandles);
-
-        let cash = initialCapital;
-        let quantity = 0;
-        let entryPrice = 0;
-        let entryTime = null;
-        let entryCost = 0;
-        let totalFees = 0;
-
-        let wins = 0;
-        let losses = 0;
-
-        let peakEquity = initialCapital;
-        let maxDrawdown = 0;
-
-        const trades = [];
-        const markers = [];
-        const equityCurve = [];
-
-        /*
-         * 演示版撮合规则：
-         * 信号在当前K线收盘后确认，下一根K线开盘成交。
-         * 不允许使用尚未发生的下一根K线数据提前成交。
-         */
-
-        const signalMap = new Map();
-
-        signals.forEach(function (signal) {
-            if (!signalMap.has(signal.index)) {
-                signalMap.set(signal.index, []);
-            }
-
-            signalMap.get(signal.index).push(signal);
-        });
-
-        for (let i = 1; i < currentCandles.length; i++) {
-            const candle = currentCandles[i];
-            const previousSignals = signalMap.get(i - 1) || [];
-
-            for (const signal of previousSignals) {
-                if (signal.type === "buy" && quantity === 0) {
-                    const executionPrice = candle.open;
-
-                    const buyFeeRate = feeRate;
-
-                    quantity =
-                        cash / (executionPrice * (1 + buyFeeRate));
-
-                    const buyValue = quantity * executionPrice;
-                    const buyFee = buyValue * buyFeeRate;
-
-                    cash -= buyValue + buyFee;
-
-                    totalFees += buyFee;
-
-                    entryPrice = executionPrice;
-                    entryTime = currentCandles[i].time;
-                    entryCost = buyValue + buyFee;
-
-                    markers.push({
-                        time: candle.time,
-                        position: "belowBar",
-                        color: "#0ecb81",
-                        shape: "arrowUp",
-                        text: "买入"
-                    });
-                } else if (signal.type === "sell" && quantity > 0) {
-                    const executionPrice = candle.open;
-
-                    const sellValue = quantity * executionPrice;
-                    const sellFee = sellValue * feeRate;
-
-                    cash += sellValue - sellFee;
-                    totalFees += sellFee;
-
-                    const profit = cash - initialCapital;
-
-                    /*
-                     * 这里按本次交易的买入总成本计算单笔收益。
-                     */
-                    const exitNetValue = sellValue - sellFee;
-                    const tradeProfit = exitNetValue - entryCost;
-
-                    const tradeReturn =
-                        entryCost > 0
-                            ? (tradeProfit / entryCost) * 100
-                            : 0;
-
-                    if (tradeProfit > 0) {
-                        wins++;
-                    } else if (tradeProfit < 0) {
-                        losses++;
-                    }
-
-                    trades.push({
-                        entryTime: entryTime,
-                        exitTime: candle.time,
-                        entryPrice: entryPrice,
-                        exitPrice: executionPrice,
-                        profit: tradeProfit,
-                        returnPercent: tradeReturn
-                    });
-
-                    markers.push({
-                        time: candle.time,
-                        position: "aboveBar",
-                        color: "#f6465d",
-                        shape: "arrowDown",
-                        text: "卖出"
-                    });
-
-                    quantity = 0;
-                    entryPrice = 0;
-                    entryTime = null;
-                    entryCost = 0;
-
-                    void profit;
-                }
-            }
-
-            const equity = cash + quantity * candle.close;
-
-            equityCurve.push(equity);
-
-            peakEquity = Math.max(peakEquity, equity);
-
-            if (peakEquity > 0) {
-                const drawdown =
-                    ((peakEquity - equity) / peakEquity) * 100;
-
-                maxDrawdown = Math.max(maxDrawdown, drawdown);
-            }
-        }
-
-        /*
-         * 回测结束时，若仍有持仓，则按最后一根K线收盘价平仓。
-         */
-        if (quantity > 0) {
-            const lastCandle =
-                currentCandles[currentCandles.length - 1];
-
-            const sellValue = quantity * lastCandle.close;
-            const sellFee = sellValue * feeRate;
-
-            cash += sellValue - sellFee;
-            totalFees += sellFee;
-
-            const tradeProfit = sellValue - sellFee - entryCost;
-
-            const tradeReturn =
-                entryCost > 0
-                    ? (tradeProfit / entryCost) * 100
-                    : 0;
-
-            if (tradeProfit > 0) {
-                wins++;
-            } else if (tradeProfit < 0) {
-                losses++;
-            }
-
-            trades.push({
-                entryTime: entryTime,
-                exitTime: lastCandle.time,
-                entryPrice: entryPrice,
-                exitPrice: lastCandle.close,
-                profit: tradeProfit,
-                returnPercent: tradeReturn
-            });
-
-            markers.push({
-                time: lastCandle.time,
-                position: "aboveBar",
-                color: "#f6465d",
-                shape: "arrowDown",
-                text: "平仓"
-            });
-        }
-
-        const finalCapital = cash;
-        const totalReturn =
-            ((finalCapital - initialCapital) / initialCapital) * 100;
-
-        const completedTrades = trades.length;
-        const winRate =
-            completedTrades > 0
-                ? (wins / completedTrades) * 100
-                : 0;
-
-        $("totalReturn").textContent = formatPercent(totalReturn);
-        $("totalReturn").className =
-            "metric-value " +
-            (totalReturn >= 0 ? "positive" : "negative");
-
-        $("finalCapital").textContent = formatMoney(finalCapital);
-        $("maxDrawdown").textContent = maxDrawdown.toFixed(2) + "%";
-        $("tradeCount").textContent = String(completedTrades);
-        $("winRate").textContent = winRate.toFixed(2) + "%";
-        $("winCount").textContent = String(wins);
-        $("lossCount").textContent = String(losses);
-        $("totalFees").textContent = formatMoney(totalFees);
-
-        $("resultStatus").textContent = "演示回测完成";
-        $("tradeSummary").textContent =
-            "共 " + completedTrades + " 笔已完成交易";
-
-        renderTrades(trades);
-
-        if (candleSeries && chart) {
-            candleSeries.setMarkers(
-                markers.sort(function (a, b) {
-                    return a.time - b.time;
-                })
-            );
-        }
-    }
-
-    function formatDate(timestamp) {
-        const date = new Date(timestamp * 1000);
-
-        return date.toLocaleString("zh-CN", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false
-        });
-    }
-
-    function renderTrades(trades) {
-        const tbody = $("tradeTableBody");
-
-        if (!trades.length) {
-            tbody.innerHTML =
-                '<tr><td colspan="8" class="empty-state">' +
-                '当前示例行情中没有产生完整交易。可以切换策略或品种再次测试。' +
-                '</td></tr>';
-
-            return;
-        }
-
-        tbody.innerHTML = trades
-            .slice()
-            .reverse()
-            .map(function (trade, index) {
-                const profitable = trade.profit >= 0;
-
-                const resultClass = profitable
-                    ? "positive"
-                    : "negative";
-
-                const resultText = profitable
-                    ? "盈利"
-                    : "亏损";
-
-                return `
-                    <tr>
-                        <td>${trades.length - index}</td>
-                        <td>${formatDate(trade.entryTime)}</td>
-                        <td>${formatDate(trade.exitTime)}</td>
-                        <td>${formatMoney(trade.entryPrice)}</td>
-                        <td>${formatMoney(trade.exitPrice)}</td>
-                        <td class="${resultClass}">
-                            ${formatMoney(trade.profit)}
-                        </td>
-                        <td class="${resultClass}">
-                            ${formatPercent(trade.returnPercent)}
-                        </td>
-                        <td>
-                            <span class="tag ${
-                                profitable ? "tag-buy" : "tag-sell"
-                            }">
-                                ${resultText}
-                            </span>
-                        </td>
-                    </tr>
-                `;
-            })
-            .join("");
-    }
-
-    function resetSettings() {
-        $("symbol").value = "BTCUSDT";
-        $("timeframe").value = "1D";
-        $("initialCapital").value = "10000";
-        $("fee").value = "0.1";
-        $("strategy").value = "ma";
-
-        $("resultStatus").textContent = "等待运行";
-        $("tradeSummary").textContent = "暂无记录";
-
-        [
-            "totalReturn",
-            "finalCapital",
-            "maxDrawdown",
-            "tradeCount",
-            "winRate",
-            "winCount",
-            "lossCount",
-            "totalFees"
-        ].forEach(function (id) {
-            $(id).textContent = "--";
-        });
-
-        $("totalReturn").className = "metric-value";
-
-        $("tradeTableBody").innerHTML =
-            '<tr><td colspan="8" class="empty-state">' +
-            '点击“运行回测”生成示例交易记录' +
-            '</td></tr>';
-
-        if (candleSeries) {
-            candleSeries.setMarkers([]);
-        }
-
-        renderCandles();
-    }
-
-    $("symbol").addEventListener("change", function () {
-        renderCandles();
-    });
-
-    $("timeframe").addEventListener("change", function () {
-        renderCandles();
-    });
-
-    $("runButton").addEventListener("click", runBacktest);
-
-    $("resetButton").addEventListener("click", resetSettings);
-
-    initChart();
-
-})();
-</script>
+<!--
+    模块加载顺序很重要：
+    先加载行情、指标和策略，
+    再加载回测引擎和图表，
+    最后加载应用控制器。
+-->
+
+<script src="./js/market-data.js"></script>
+<script src="./js/indicators.js"></script>
+<script src="./js/strategies.js"></script>
+<script src="./js/backtest.js"></script>
+<script src="./js/chart.js"></script>
+<script src="./js/app.js"></script>
 
 </body>
 </html>
